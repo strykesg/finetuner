@@ -99,9 +99,7 @@ class FinancialModelTrainer:
                 with open(output_file, 'w', encoding='utf-8') as f:
                     for record in alpaca_records:
                         json.dump(record, f, ensure_ascii=False)
-                        f.write('
-')
-')
+                        f.write('\n')
 
                 print(f"Saved {len(alpaca_records)} records to {output_file}")
 
