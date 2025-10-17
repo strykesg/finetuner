@@ -45,9 +45,10 @@ class FinancialModelTrainer:
         self.datasets_dir = self.project_root / "datasets"
         self.output_dir = Path(args.output_dir) if args.output_dir else self.project_root / "financial_model_output"
 
-        # Model configuration - Original model with GGUF support
-        self.model_name = "ServiceNow/Apriel-Nemotron-15B-Thinker"
-        self.quantization = "Q6_K"
+        # Model configuration - Using Llama 3.1 8B with INT8 (Q8_0) quantization
+        # This provides excellent balance of performance and memory efficiency
+        self.model_name = "unsloth/Meta-Llama-3.1-8B"  # Base Llama 3.1 8B model
+        self.quantization = "8bit"  # INT8 quantization (Q8_0) for optimal performance
 
         # Dataset sources
         self.dataset_sources = [
