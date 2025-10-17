@@ -74,6 +74,7 @@ from datasets import load_dataset
 from transformers import TrainingArguments
 from trl import SFTTrainer
 from unsloth import FastLanguageModel, is_bfloat16_supported
+from trl.trainer import SFTConfig
 
 
 def parse_arguments() -> argparse.Namespace:
@@ -501,8 +502,9 @@ def main() -> None:
 
     train_dataset = train_dataset.map(preprocess_function, batched=True)
 
-    # Configure training arguments
-    training_args = TrainingArguments(
+    # Configure training arguments using SFTConfig
+    training_args = SFTConfig(
+        output_dir=args.output_dir,
         per_device_train_batch_size=args.per_device_train_batch_size,
         gradient_accumulation_steps=args.gradient_accumulation_steps,
         warmup_steps=5,  # Small default for stable training
@@ -517,15 +519,16 @@ def main() -> None:
         weight_decay=0.01,  # Standard weight decay
         lr_scheduler_type="linear",  # Linear learning rate schedule
         seed=3407,  # For reproducibility
-        output_dir=args.output_dir,
-        dataset_text_field="text",  # Moved from SFTTrainer
+        dataset_text_field="text",
+        max_seq_length=args.max_seq_length,
+        packing=False,
     )
 
     # Initialize SFTTrainer
     print("Configuring SFTTrainer...")
     trainer = SFTTrainer(
         model=model,
-        processing_class=tokenizer,
+        tokenizer=tokenizer,
         train_dataset=train_dataset,
         args=training_args,
     )
