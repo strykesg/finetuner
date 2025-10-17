@@ -518,7 +518,7 @@ def main() -> None:
     print("Configuring SFTTrainer...")
     trainer = SFTTrainer(
         model=model,
-        tokenizer=tokenizer,
+        processing_class=tokenizer,
         train_dataset=train_dataset,
         dataset_text_field="text",  # Standardized column name
         max_seq_length=args.max_seq_length,
