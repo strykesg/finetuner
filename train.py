@@ -519,7 +519,6 @@ def main() -> None:
         weight_decay=0.01,  # Standard weight decay
         lr_scheduler_type="linear",  # Linear learning rate schedule
         seed=3407,  # For reproducibility
-        dataset_text_field="text",
         max_seq_length=args.max_seq_length,
         packing=False,
     )
