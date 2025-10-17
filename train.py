@@ -134,8 +134,17 @@ def main() -> None:
     """Main execution function."""
     args = parse_arguments()
 
+    # Get rank for distributed training
+    local_rank = int(os.environ.get("LOCAL_RANK", 0))
+    is_main_process = local_rank == 0
+
+    def log(message):
+        if is_main_process:
+            print(message)
+
     # Financial model mode overrides
     if args.financial_model:
+        log("Running in financial model mode...")
         args.model_name = "unsloth/Meta-Llama-3.1-8B-bnb-4bit"
         args.dataset_folder = "datasets/"
         args.max_seq_length = 4096
@@ -167,15 +176,7 @@ def main() -> None:
     load_in_4bit = "4bit" in args.quantization
     load_in_8bit = args.quantization == "8bit"
 
-    is_distributed = int(os.environ.get("RANK", -1)) != -1
-    if is_distributed and int(os.environ.get("LOCAL_RANK", 0)) != 0:
-        # In distributed training, only load the model on the main process
-        torch.distributed.barrier()
-        # Re-get tokenizer and model from main process
-        # This is a placeholder, real implementation would require broadcasting
-        # For now, this process will wait
-        return
-
+    log(f"Loading model: {args.model_name}")
     model, tokenizer = FastLanguageModel.from_pretrained(
         model_name=args.model_name,
         max_seq_length=args.max_seq_length,
@@ -184,13 +185,11 @@ def main() -> None:
         load_in_8bit=load_in_8bit,
     )
 
-    if is_distributed:
-        torch.distributed.barrier()
-
     # Set chat template for Llama models if missing
     if tokenizer.chat_template is None:
         tokenizer.chat_template = """<|begin_of_text|>{% for message in messages %}{% if message['role'] == 'system' %}{{ message['content'] }}{% elif message['role'] == 'user' %}{{ '<|start_header_id|>user<|end_header_id|>\n\n' + message['content'] + '<|eot_id|>' }}{% elif message['role'] == 'assistant' %}{{ '<|start_header_id|>assistant<|end_header_id|>\n\n' + message['content'] + '<|eot_id|>' }}{% endif %}{% endfor %}{% if add_generation_prompt %}{{ '<|start_header_id|>assistant<|end_header_id|>\n\n' }}{% endif %}"""
 
+    log("Configuring PEFT adapters...")
     model = FastLanguageModel.get_peft_model(
         model,
         r=args.lora_r,
@@ -202,8 +201,10 @@ def main() -> None:
         random_state=3407,
     )
 
+    log("Loading and formatting dataset...")
     train_dataset = load_and_format_dataset(args, tokenizer)
 
+    log("Configuring SFTTrainer...")
     trainer = SFTTrainer(
         model=model,
         tokenizer=tokenizer,
@@ -228,11 +229,13 @@ def main() -> None:
         ),
     )
 
+    log("Starting training...")
     trainer.train()
 
-    print("Fine-tuning completed successfully!")
-    model.save_pretrained(args.output_dir)
-    tokenizer.save_pretrained(args.output_dir)
+    log("Fine-tuning completed successfully!")
+    if is_main_process:
+        model.save_pretrained(args.output_dir)
+        tokenizer.save_pretrained(args.output_dir)
 
 if __name__ == "__main__":
     main()
