@@ -45,7 +45,7 @@ class FinancialModelTrainer:
         self.datasets_dir = self.project_root / "datasets"
         self.output_dir = Path(args.output_dir) if args.output_dir else self.project_root / "financial_model_output"
 
-        # Model configuration
+        # Model configuration - Original model with GGUF support
         self.model_name = "ServiceNow/Apriel-Nemotron-15B-Thinker"
         self.quantization = "Q6_K"
 
