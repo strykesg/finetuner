@@ -361,6 +361,17 @@ def load_single_dataset(dataset_path: str, dataset_format: str, tokenizer: Any, 
 
         dataset = load_dataset(data_type, data_files=dataset_path)
 
+        # Handle case where dataset might be a DatasetDict (has splits)
+        if hasattr(dataset, 'keys') and callable(getattr(dataset, 'keys', None)):
+            # This is a DatasetDict, select the appropriate split
+            if split in dataset:
+                dataset = dataset[split]
+            elif 'train' in dataset:
+                dataset = dataset['train']
+            else:
+                # If no train split, take the first available split
+                dataset = next(iter(dataset.values()))
+
     # Format according to specified format
     if dataset_format == "alpaca":
         formatted_dataset = format_alpaca_dataset(dataset)
