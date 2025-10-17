@@ -32,7 +32,7 @@ from typing import List, Optional
 # Add current directory to path for imports
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from convert_datasets import convert_datasets
+from convert_datasets import main as convert_datasets
 from train import main as train_main
 
 

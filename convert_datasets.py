@@ -8,6 +8,7 @@ for the fine-tuning utility, and moves them to the correct folders in datasets/.
 Supported conversions:
 - DPO format (prompt, chosen, rejected) → Alpaca format (instruction, input, output)
 - ShareGPT format (messages array) → Remains as ShareGPT, moved to sharegpt/ folder
+- Investopedia format (Question, Answer, Context) → Alpaca format
 
 Usage:
     python convert_datasets.py
@@ -16,10 +17,14 @@ The script will:
 1. Scan random/ folder for .json and .jsonl files
 2. Auto-detect format of each dataset
 3. Convert DPO datasets to Alpaca format for SFT training
-4. Move datasets to appropriate folders:
+4. Convert Investopedia datasets to Alpaca format
+5. Move datasets to appropriate folders:
    - Alpaca format → datasets/alpaca/
    - ShareGPT format → datasets/sharegpt/
-5. Provide detailed logging of conversions and moves
+6. Provide detailed logging of conversions and moves
+
+Note: The train_financial_model.py script automatically downloads and converts
+the FinLang/investopedia-instruction-tuning-dataset from Hugging Face.
 """
 
 import json

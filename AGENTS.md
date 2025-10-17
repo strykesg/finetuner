@@ -10,6 +10,7 @@
 - **Convert datasets**: `python convert_datasets.py`
 - **Run fine-tuning**: `python train.py --dataset "yahma/alpaca-cleaned"`
 - **Run multi-dataset training**: `python train.py --dataset_folder datasets/`
+- **Train financial model**: `python train_financial_model.py`
 
 ## Architecture & Codebase Structure
 - **train.py**: Main command-line utility for fine-tuning LLMs using Unsloth
@@ -48,6 +49,14 @@ The `convert_datasets.py` script automatically organizes datasets from the `rand
 
 Run `python convert_datasets.py` to process datasets in the `random/` folder.
 
+## Financial Model Training
+The `train_financial_model.py` script provides a comprehensive training setup for financial domain models:
+
+- **Model**: ServiceNow/Apriel-Nemotron-15B-Thinker (Q6_K GGUF quantized)
+- **Datasets**: Combined SFT and DPO datasets, plus FinLang Investopedia dataset
+- **Optimization**: Memory-efficient training with domain-specific hyperparameters
+- **Output**: Production-ready financial assistant model
+
 ### Usage Examples
 ```bash
 # Single dataset from Hub
@@ -58,6 +67,12 @@ python convert_datasets.py
 
 # Multiple datasets from organized folder
 python train.py --dataset_folder "./datasets/"
+
+# Train comprehensive financial model
+python train_financial_model.py
+
+# Custom financial model training
+python train_financial_model.py --output_dir ./my_finance_model --extra_args --learning_rate 1e-5
 ```
 
 
