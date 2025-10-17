@@ -198,6 +198,35 @@ Examples:
         help="Comma-separated list of modules to apply LoRA to in the model architecture."
     )
 
+    parser.add_argument(
+        "--quantization",
+        type=str,
+        default="4bit",
+        choices=["4bit", "8bit", "none", "Q6_K"],
+        help="Quantization method for model loading. '4bit' and '8bit' use Unsloth's built-in support. 'Q6_K' (GGUF) is not natively supported—will fallback to 4bit with warning. 'none' loads full precision."
+    )
+
+    parser.add_argument(
+        "--logging_steps",
+        type=int,
+        default=1,
+        help="How often to log training metrics (steps)."
+    )
+
+    parser.add_argument(
+        "--save_steps",
+        type=int,
+        default=500,
+        help="How often to save checkpoints (steps)."
+    )
+
+    parser.add_argument(
+        "--save_total_limit",
+        type=int,
+        default=3,
+        help="Maximum number of checkpoints to keep."
+    )
+
     return parser.parse_args()
 
 
@@ -413,11 +442,24 @@ def main() -> None:
 
     # Load model and tokenizer
     print(f"Loading model: {args.model_name}...")
+    
+    load_in_4bit = False
+    load_in_8bit = False
+    if args.quantization == "4bit":
+        load_in_4bit = True
+    elif args.quantization == "8bit":
+        load_in_8bit = True
+    elif args.quantization == "Q6_K":
+        print("⚠️  Warning: Q6_K (GGUF) quantization is not natively supported in Unsloth. Falling back to 4-bit quantization. For full GGUF support, consider using llama.cpp separately.")
+        load_in_4bit = True
+    # 'none' uses full precision (no quantization)
+    
     model, tokenizer = FastLanguageModel.from_pretrained(
         model_name=args.model_name,
         max_seq_length=args.max_seq_length,
         dtype=None,  # Auto-detect optimal dtype
-        load_in_4bit=True,  # Enable 4-bit quantization for memory efficiency
+        load_in_4bit=load_in_4bit,
+        load_in_8bit=load_in_8bit,
     )
 
     # Load and format dataset
@@ -447,7 +489,9 @@ def main() -> None:
         learning_rate=args.learning_rate,
         fp16=not is_bfloat16_supported(),  # Use fp16 if bfloat16 not supported
         bf16=is_bfloat16_supported(),  # Use bfloat16 if supported
-        logging_steps=1,  # Frequent logging for monitoring
+        logging_steps=args.logging_steps,  # Use parsed arg
+        save_steps=args.save_steps,  # Use parsed arg
+        save_total_limit=args.save_total_limit,  # Use parsed arg
         optim="adamw_8bit",  # Memory-efficient optimizer
         weight_decay=0.01,  # Standard weight decay
         lr_scheduler_type="linear",  # Linear learning rate schedule
