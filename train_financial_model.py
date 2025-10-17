@@ -50,10 +50,9 @@ class FinancialModelTrainer:
         self.model_name = "unsloth/Meta-Llama-3.1-8B"  # Base Llama 3.1 8B model
         self.quantization = "8bit"  # INT8 quantization (Q8_0) for optimal performance
 
-        # Dataset sources
+        # Dataset sources - using local datasets only (Investopedia already converted)
         self.dataset_sources = [
-            "FinLang/investopedia-instruction-tuning-dataset",
-            str(self.datasets_dir)  # Our converted datasets
+            str(self.datasets_dir)  # Our converted datasets including Investopedia
         ]
 
     def download_investopedia_dataset(self):
@@ -99,14 +98,17 @@ class FinancialModelTrainer:
                             "output": output
                         })
 
-                # Save as JSONL
-                output_file = investopedia_dir / f"investopedia_{split_name}.jsonl"
-                with open(output_file, 'w', encoding='utf-8') as f:
-                    for record in alpaca_records:
-                        json.dump(record, f, ensure_ascii=False)
-                        f.write('\n')
+                # Save as JSONL - only save train split, skip test split
+                if split_name == "train":
+                    output_file = investopedia_dir / f"investopedia_{split_name}.jsonl"
+                    with open(output_file, 'w', encoding='utf-8') as f:
+                        for record in alpaca_records:
+                            json.dump(record, f, ensure_ascii=False)
+                            f.write('\n')
 
-                print(f"Saved {len(alpaca_records)} records to {output_file}")
+                    print(f"Saved {len(alpaca_records)} records to {output_file}")
+                else:
+                    print(f"Skipping {split_name} split (only using train data)")
 
             print("✅ Investopedia dataset downloaded and converted")
             return True

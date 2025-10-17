@@ -527,6 +527,11 @@ def main() -> None:
 
     print("Fine-tuning completed successfully!")
 
+    # Provide manual quantization command
+    print("\n🔄 To quantize the trained model to GGUF format, run:")
+    print(f"python -m llama.cpp.convert --model {args.output_dir} --outtype q8_0 --outfile {args.output_dir}/model-q8_0.gguf")
+    print("Note: Requires llama.cpp to be installed for GGUF conversion.")
+
 
 if __name__ == "__main__":
     main()
