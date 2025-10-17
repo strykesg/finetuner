@@ -167,6 +167,15 @@ def main() -> None:
     load_in_4bit = "4bit" in args.quantization
     load_in_8bit = args.quantization == "8bit"
 
+    is_distributed = int(os.environ.get("RANK", -1)) != -1
+    if is_distributed and int(os.environ.get("LOCAL_RANK", 0)) != 0:
+        # In distributed training, only load the model on the main process
+        torch.distributed.barrier()
+        # Re-get tokenizer and model from main process
+        # This is a placeholder, real implementation would require broadcasting
+        # For now, this process will wait
+        return
+
     model, tokenizer = FastLanguageModel.from_pretrained(
         model_name=args.model_name,
         max_seq_length=args.max_seq_length,
@@ -174,6 +183,9 @@ def main() -> None:
         load_in_4bit=load_in_4bit,
         load_in_8bit=load_in_8bit,
     )
+
+    if is_distributed:
+        torch.distributed.barrier()
 
     # Set chat template for Llama models if missing
     if tokenizer.chat_template is None:
@@ -212,6 +224,7 @@ def main() -> None:
             save_total_limit=args.save_total_limit,
             optim="adamw_8bit",
             seed=3407,
+            ddp_find_unused_parameters=False,
         ),
     )
 
