@@ -527,7 +527,6 @@ def main() -> None:
     print("Configuring SFTTrainer...")
     trainer = SFTTrainer(
         model=model,
-        tokenizer=tokenizer,
         train_dataset=train_dataset,
         args=training_args,
     )
