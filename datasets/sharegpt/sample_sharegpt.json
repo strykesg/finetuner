@@ -1,0 +1,26 @@
+[
+  {
+    "conversations": [
+      {
+        "from": "human",
+        "value": "Hello, how are you?"
+      },
+      {
+        "from": "assistant",
+        "value": "I'm doing well, thank you for asking! How can I help you today?"
+      }
+    ]
+  },
+  {
+    "conversations": [
+      {
+        "from": "human",
+        "value": "What's the weather like?"
+      },
+      {
+        "from": "assistant",
+        "value": "I'm sorry, but I don't have access to current weather information. Could you please check a weather app or website for the most up-to-date forecast?"
+      }
+    ]
+  }
+]

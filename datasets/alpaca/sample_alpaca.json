@@ -1,0 +1,12 @@
+[
+  {
+    "instruction": "What is the capital of France?",
+    "input": "",
+    "output": "The capital of France is Paris."
+  },
+  {
+    "instruction": "Explain photosynthesis",
+    "input": "in simple terms",
+    "output": "Photosynthesis is the process by which plants use sunlight, water, and carbon dioxide to create oxygen and energy in the form of glucose."
+  }
+]
