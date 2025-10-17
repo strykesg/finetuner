@@ -4,6 +4,7 @@ A comprehensive toolkit for fine-tuning Large Language Models (LLMs) with specia
 
 ## 🚀 Quick Start
 
+### Option 1: Local Training (Recommended)
 Train a financial assistant model in 5 minutes:
 
 ```bash
@@ -12,6 +13,17 @@ cd finetuner
 pip install -r requirements.txt
 python train_financial_model.py
 ```
+
+### Option 2: Google Colab Training
+For users without local GPU access:
+
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/strykesg/finetuner/blob/main/finetune_colab.ipynb)
+
+**Colab Requirements:**
+- Colab Pro/Pro+ subscription
+- A100 GPU (recommended)
+- High RAM runtime
+- 8-24 hours training time
 
 ## 📋 Table of Contents
 
@@ -334,6 +346,19 @@ python train_financial_model.py
 nvidia-smi
 # Use smaller model if needed
 python train.py --model_name "unsloth/Mistral-7B-Instruct-v0.3-bnb-4bit" --dataset_folder datasets/
+```
+
+#### Colab-Specific Issues
+```bash
+# Memory issues in Colab
+# Use the Colab notebook with optimized settings
+# Reduce max_seq_length to 1024-2048
+# Use gradient_accumulation_steps=8 for smaller GPUs
+
+# Time limit issues
+# Save checkpoints every 50 steps
+# Use resumable training
+# Consider Colab Pro+ for longer sessions
 ```
 
 ### Performance Optimization
