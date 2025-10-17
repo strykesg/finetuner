@@ -79,9 +79,13 @@ class FinancialModelTrainer:
                 alpaca_records = []
                 for item in split_data:
                     # Create instruction from question, output from answer
-                    instruction = item.get('Question', '').strip()
-                    output = item.get('Answer', '').strip()
-                    context = item.get('Context', '').strip()
+                    question = item.get('Question')
+                    answer = item.get('Answer')
+                    context = item.get('Context')
+
+                    instruction = (question.strip() if question else '') if isinstance(question, str) else ''
+                    output = (answer.strip() if answer else '') if isinstance(answer, str) else ''
+                    context = (context.strip() if context else '') if isinstance(context, str) else ''
 
                     if instruction and output:
                         # Add context if available
