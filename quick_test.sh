@@ -5,8 +5,8 @@ python3 train.py \
   # --model_name: Use a very small model for a quick test.
   --model_name "unsloth/gemma-2b-it-bnb-4bit" \
 
-  # --dataset: Use only the tiny sample dataset, not the full financial datasets.
-  --dataset "/Users/bradleymutemi/Documents/finetuner/datasets/alpaca/sample_alpaca.json" \
+  # --dataset: Use the relative path to the tiny sample dataset.
+  --dataset "datasets/alpaca/sample_alpaca.json" \
   --dataset_format "alpaca" \
 
   # --output_dir: Save to a temporary directory.
