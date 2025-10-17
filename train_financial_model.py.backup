@@ -63,55 +63,63 @@ class FinancialModelTrainer:
         investopedia_dir.mkdir(exist_ok=True)
 
         try:
-            # Import here to avoid subprocess issues
-            from datasets import load_dataset
-            import json
+            # Use subprocess to run the download via datasets library
+            cmd = [
+                sys.executable, "-c",
+                f"""
+from datasets import load_dataset
+import json
 
-            # Load the dataset
-            print("Loading Investopedia dataset...")
-            dataset = load_dataset("FinLang/investopedia-instruction-tuning-dataset")
+# Load the dataset
+print("Loading Investopedia dataset...")
+dataset = load_dataset("FinLang/investopedia-instruction-tuning-dataset")
 
-            # Convert to Alpaca format for each split
-            for split_name in dataset.keys():
-                print(f"Converting {split_name} split...")
-                split_data = dataset[split_name]
+# Convert to Alpaca format for each split
+for split in dataset.keys():
+    print(f"Converting {split} split...")
+    split_data = dataset[split]
 
-                alpaca_records = []
-                for item in split_data:
-                    # Create instruction from question, output from answer
-                    instruction = item.get('Question', '').strip()
-                    output = item.get('Answer', '').strip()
-                    context = item.get('Context', '').strip()
+    alpaca_records = []
+    for item in split_data:
+        # Create instruction from question, output from answer
+        instruction = item.get('Question', '').strip()
+        output = item.get('Answer', '').strip()
+        context = item.get('Context', '').strip()
 
-                    if instruction and output:
-                        # Add context if available
-                        if context:
-                            instruction = f"Context: {context}\n\nQuestion: {instruction}"
+        if instruction and output:
+            # Add context if available
+            if context:
+                instruction = f"Context: {context}\n\nQuestion: {instruction}"
 
-                        alpaca_records.append({
-                            "instruction": instruction,
-                            "input": "",
-                            "output": output
-                        })
+            alpaca_records.append({{
+                "instruction": instruction,
+                "input": "",
+                "output": output
+            }})
 
-                # Save as JSONL
-                output_file = investopedia_dir / f"investopedia_{split_name}.jsonl"
-                with open(output_file, 'w', encoding='utf-8') as f:
-                    for record in alpaca_records:
-                        json.dump(record, f, ensure_ascii=False)
-                        f.write('
-')
-')
+    # Save as JSONL
+    output_file = "{investopedia_dir}/investopedia_{split}.jsonl"
+    with open(output_file, 'w', encoding='utf-8') as f:
+        for record in alpaca_records:
+            json.dump(record, f, ensure_ascii=False)
+            f.write('\n')
 
-                print(f"Saved {len(alpaca_records)} records to {output_file}")
+    print(f"Saved {len(alpaca_records)} records to {output_file}")
+
+print("Investopedia dataset conversion complete!")
+"""
+            ]
+
+            result = subprocess.run(cmd, capture_output=True, text=True, cwd=self.project_root)
+            if result.returncode != 0:
+                print(f"Error downloading Investopedia dataset: {result.stderr}")
+                return False
 
             print("✅ Investopedia dataset downloaded and converted")
             return True
 
         except Exception as e:
             print(f"Error downloading Investopedia dataset: {e}")
-            import traceback
-            traceback.print_exc()
             return False
 
     def prepare_datasets(self):
