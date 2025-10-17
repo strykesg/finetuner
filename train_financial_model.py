@@ -155,8 +155,11 @@ class FinancialModelTrainer:
             "--lora_alpha", "64",  # Higher alpha for better adaptation
             "--lora_target_modules", "q_proj,k_proj,v_proj,o_proj,gate_proj,up_proj,down_proj",
 
-            # Quantization settings
-            "--quantization", self.quantization,
+            # Quantization and training monitoring
+            "--quantization", "Q6_K",
+            "--logging_steps", "10",
+            "--save_steps", "500",
+            "--save_total_limit", "3",
 
             # Logging and monitoring
             "--logging_steps", "10",
