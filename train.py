@@ -442,7 +442,7 @@ def main() -> None:
 
     # Load model and tokenizer
     print(f"Loading model: {args.model_name}...")
-    
+
     load_in_4bit = False
     load_in_8bit = False
     if args.quantization == "4bit":
@@ -453,7 +453,7 @@ def main() -> None:
         print("⚠️  Warning: Q6_K (GGUF) quantization is not natively supported in Unsloth. Falling back to 4-bit quantization. For full GGUF support, consider using llama.cpp separately.")
         load_in_4bit = True
     # 'none' uses full precision (no quantization)
-    
+
     model, tokenizer = FastLanguageModel.from_pretrained(
         model_name=args.model_name,
         max_seq_length=args.max_seq_length,
@@ -461,6 +461,10 @@ def main() -> None:
         load_in_4bit=load_in_4bit,
         load_in_8bit=load_in_8bit,
     )
+
+    # Set chat template for Llama models if missing
+    if tokenizer.chat_template is None:
+        tokenizer.chat_template = "{% if messages[0]['role'] == 'system' %}{% set system_message = messages[0]['content'] %}{% endif %}{% if system_message is defined %}{{ system_message }}{% endif %}{% for message in messages %}{% set content = message['content'] %}{% if message['role'] == 'user' %}{{ '<|start_header_id|>user<|end_header_id|>\n\n' + content + '<|eot_id|>' }}{% elif message['role'] == 'assistant' %}{{ '<|start_header_id|>assistant<|end_header_id|>\n\n' + content + '<|eot_id|>' }}{% endif %}{% endfor %}{% if add_generation_prompt %}{{ '<|start_header_id|>assistant<|end_header_id|>\n\n' }}{% endif %}"
 
     # Load and format dataset
     train_dataset = load_and_format_dataset(args, tokenizer)
