@@ -495,6 +495,12 @@ def main() -> None:
         loftq_config=None,  # Not using LoftQ
     )
 
+    # Preprocess dataset before training
+    def preprocess_function(examples):
+        return tokenizer(examples['text'], padding="max_length", truncation=True, max_length=args.max_seq_length)
+
+    train_dataset = train_dataset.map(preprocess_function, batched=True)
+
     # Configure training arguments
     training_args = TrainingArguments(
         per_device_train_batch_size=args.per_device_train_batch_size,
@@ -512,6 +518,7 @@ def main() -> None:
         lr_scheduler_type="linear",  # Linear learning rate schedule
         seed=3407,  # For reproducibility
         output_dir=args.output_dir,
+        dataset_text_field="text",  # Moved from SFTTrainer
     )
 
     # Initialize SFTTrainer
@@ -520,10 +527,6 @@ def main() -> None:
         model=model,
         processing_class=tokenizer,
         train_dataset=train_dataset,
-        dataset_text_field="text",  # Standardized column name
-        max_seq_length=args.max_seq_length,
-        dataset_num_proc=2,  # Parallel processing for data loading
-        packing=False,  # False for broader compatibility (can be set to True for better throughput on short examples)
         args=training_args,
     )
 
