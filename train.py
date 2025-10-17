@@ -175,6 +175,10 @@ def main() -> None:
         load_in_8bit=load_in_8bit,
     )
 
+    # Set chat template for Llama models if missing
+    if tokenizer.chat_template is None:
+        tokenizer.chat_template = """<|begin_of_text|>{% for message in messages %}{% if message['role'] == 'system' %}{{ message['content'] }}{% elif message['role'] == 'user' %}{{ '<|start_header_id|>user<|end_header_id|>\n\n' + message['content'] + '<|eot_id|>' }}{% elif message['role'] == 'assistant' %}{{ '<|start_header_id|>assistant<|end_header_id|>\n\n' + message['content'] + '<|eot_id|>' }}{% endif %}{% endfor %}{% if add_generation_prompt %}{{ '<|start_header_id|>assistant<|end_header_id|>\n\n' }}{% endif %}"""
+
     model = FastLanguageModel.get_peft_model(
         model,
         r=args.lora_r,
