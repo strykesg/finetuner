@@ -130,46 +130,49 @@ datasets/
 
 ### Financial Model Training
 
-Train the ServiceNow/Apriel-Nemotron-15B-Thinker model on financial datasets:
+Train and quantize the `DSR1/DSR1-Distill-Qwen-14B` base model into a ready-to-serve
+financial assistant:
 
 ```bash
-python train_financial_model.py
+python train_financial_model.py --llama_cpp_path ./llama.cpp
 ```
 
-This single command will:
-1. Download required datasets
-2. Convert and organize data
-3. Configure optimal training parameters
-4. Train the model for 3 epochs
-5. Save the fine-tuned model
+This pipeline performs the full workflow:
+1. Convert and organise datasets (including Investopedia ingestion)
+2. Run supervised LoRA fine-tuning for three epochs
+3. Merge the adapters back into a full-precision model
+4. Export an FP16 GGUF artifact
+5. Quantise to `Q4_K_M` for efficient deployment
 
 ### Training Parameters
 
-- **Model**: ServiceNow/Apriel-Nemotron-15B-Thinker (Q6_K quantized)
-- **Datasets**: Combined SFT, DPO, and Investopedia datasets (~22,500 examples)
-- **Batch Size**: 1 with gradient accumulation (effective batch size: 8)
-- **Learning Rate**: 2e-5
-- **LoRA Rank**: 32 (higher for complex financial reasoning)
+- **Base Model**: DSR1/DSR1-Distill-Qwen-14B (4-bit training via Unsloth)
+- **Datasets**: SFT + converted DPO + Investopedia (~22.5k examples)
+- **Batch Size**: 1 (effective 8 via gradient accumulation)
+- **Learning Rate**: 1e-5 (tuned for 14B distilled base)
+- **LoRA Rank**: 32 with alpha 64 for richer adaptation
 - **Context Length**: 4096 tokens
-- **Training Time**: 4-8 hours on modern GPU
+- **Outputs**: LoRA adapters, merged FP16 model, FP16 GGUF, Q4_K_M GGUF
 
 ### Custom Training
 
 ```bash
-# Train with custom parameters
+# Override hyper-parameters or artefact locations
 python train_financial_model.py \
-  --output_dir ./my_finance_model \
-  --extra_args \
-  --learning_rate 1e-5 \
+  --learning_rate 8e-6 \
   --num_train_epochs 5 \
-  --max_seq_length 8192
+  --max_seq_length 6144 \
+  --gguf_q4_path ./models/finance_q4.gguf
 
-# Resume interrupted training
+# Skip quantisation if you only need LoRA adapters
+python train_financial_model.py --skip_quantization
+
+# Resume raw training manually (advanced)
 python train.py \
-  --model_name ServiceNow/Apriel-Nemotron-15B-Thinker \
+  --model_name DSR1/DSR1-Distill-Qwen-14B \
   --dataset_folder datasets/ \
-  --output_dir ./financial_model_output \
-  --resume_from_checkpoint ./financial_model_output/checkpoint-latest
+  --output_dir ./financial_lora \
+  --resume_from_checkpoint ./financial_lora/checkpoint-latest
 ```
 
 ### General Fine-Tuning
@@ -207,7 +210,6 @@ For GPUs with limited VRAM:
 
 ```bash
 python train_financial_model.py \
-  --extra_args \
   --per_device_train_batch_size 1 \
   --gradient_accumulation_steps 16 \
   --max_seq_length 2048
@@ -258,18 +260,17 @@ After training, your financial model will excel at:
 ### Load Trained Model
 
 ```python
-from transformers import AutoTokenizer
 from unsloth import FastLanguageModel
+from peft import PeftModel
 
-# Load fine-tuned model
+# Load base + adapters for inference
 model, tokenizer = FastLanguageModel.from_pretrained(
-    model_name="./financial_model_output",
+    model_name="DSR1/DSR1-Distill-Qwen-14B",
     max_seq_length=4096,
     dtype=None,
     load_in_4bit=True,
 )
-
-# Enable faster inference
+model = PeftModel.from_pretrained(model, "./financial_lora")
 FastLanguageModel.for_inference(model)
 ```
 
@@ -300,14 +301,14 @@ from peft import PeftModel
 
 # Load base model
 base_model = FastLanguageModel.from_pretrained(
-    model_name="ServiceNow/Apriel-Nemotron-15B-Thinker",
+    model_name="DSR1/DSR1-Distill-Qwen-14B",
     max_seq_length=4096,
     dtype=None,
     load_in_4bit=True,
 )[0]
 
 # Merge adapters
-model = PeftModel.from_pretrained(base_model, "./financial_model_output")
+model = PeftModel.from_pretrained(base_model, "./financial_lora")
 merged_model = model.merge_and_unload()
 
 # Save merged model
@@ -323,7 +324,7 @@ tokenizer.save_pretrained("./merged_financial_model")
 ```bash
 # Reduce memory usage
 export PYTORCH_CUDA_ALLOC_CONF=max_split_size_mb:512
-python train_financial_model.py --extra_args --per_device_train_batch_size 1 --gradient_accumulation_steps 16
+python train_financial_model.py --per_device_train_batch_size 1 --gradient_accumulation_steps 16
 ```
 
 #### Import Errors
@@ -413,7 +414,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - [Unsloth](https://github.com/unslothai/unsloth) for optimized training
 - [Hugging Face](https://huggingface.co) for datasets and transformers
 - [FinLang](https://huggingface.co/FinLang) for financial datasets
-- ServiceNow for the Nemotron model
+- [DSR1](https://huggingface.co/DSR1) for the distilled Qwen base
 
 ---
 

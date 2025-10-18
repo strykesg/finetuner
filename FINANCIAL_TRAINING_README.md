@@ -1,15 +1,24 @@
 # Financial Model Training Guide
 
-This guide explains how to use the `train_financial_model.py` script to train a specialized financial assistant model.
+This guide covers the end-to-end pipeline implemented in `train_financial_model.py`
+for fine-tuning **DSR1/DSR1-Distill-Qwen-14B** on curated financial datasets and
+exporting a production-ready `Q4_K_M` GGUF.
 
 ## Overview
 
-The financial training script provides an end-to-end solution for training the **ServiceNow/Apriel-Nemotron-15B-Thinker** model on comprehensive financial datasets, including:
+The financial workflow automates four stages:
 
-- **Trader SFT Data**: Conversational trading assistant interactions
-- **Trader DPO Data**: Preference learning data (converted to SFT format)
-- **Investopedia Dataset**: Financial education and instruction-tuning data
-- **Combined Knowledge**: Multi-domain financial expertise
+1. Convert local datasets and ingest the FinLang Investopedia corpus
+2. Fine-tune the base model with LoRA adapters using Unsloth
+3. Merge adapters back into a full-precision Hugging Face checkpoint
+4. Convert to GGUF and quantise to `Q4_K_M` for lightweight deployment
+
+Outputs are written to:
+
+- `financial_lora/` – LoRA adapters and tokenizer (resumable training)
+- `merged_financial_fp16/` – Full FP16 Hugging Face model
+- `financial_model_fp16.gguf` – FP16 GGUF export
+- `financial_model_q4_k_m.gguf` – Quantised GGUF ready for inference
 
 ## Quick Start
 
@@ -17,176 +26,107 @@ The financial training script provides an end-to-end solution for training the *
 # Install dependencies
 pip install -r requirements.txt
 
-# Run financial model training
-python train_financial_model.py
+# Run the pipeline (expects llama.cpp checked out at ./llama.cpp)
+python train_financial_model.py --llama_cpp_path ./llama.cpp
 ```
 
-## Model Details
+Pass `--skip_quantization` if you only need LoRA adapters or a merged HF
+checkpoint.
 
-- **Base Model**: ServiceNow/Apriel-Nemotron-15B-Thinker
-- **Quantization**: Q6_K GGUF (6-bit quantization for optimal performance)
-- **Architecture**: Optimized for financial reasoning and analysis
-- **Context Length**: 4096 tokens (extended for complex financial analysis)
+## Model & Training Details
 
-## Training Configuration
+- **Base model**: `DSR1/DSR1-Distill-Qwen-14B`
+- **Training precision**: 4-bit loading via Unsloth with LoRA (r=32, alpha=64)
+- **Datasets**: Trader SFT, converted Trader DPO, FinLang Investopedia (~22.5k samples)
+- **Sequence length**: 4096 tokens
+- **Effective batch size**: 8 (batch 1, grad accumulation 8)
+- **Learning rate**: 1e-5 (cosine schedule handled by TRL SFT trainer)
+- **Quantisation**: `Q4_K_M` via `llama.cpp` after merging
 
-### Optimized Hyperparameters
+Training typically requires a 24GB+ GPU and ~50GB of free disk space for all
+artifacts.
+
+## Customisation
+
+The script exposes knobs for every stage. Common examples:
+
+```bash
+# Change output locations and quantised filename
+python train_financial_model.py \
+  --lora_output_dir ./outputs/lora \
+  --merged_model_dir ./outputs/merged_fp16 \
+  --gguf_q4_path ./outputs/finance_q4.gguf
+
+# Adjust hyperparameters
+python train_financial_model.py \
+  --learning_rate 8e-6 \
+  --num_train_epochs 5 \
+  --max_seq_length 6144 \
+  --gradient_accumulation_steps 12
+
+# Resume raw training manually (advanced)
+python train.py \
+  --model_name DSR1/DSR1-Distill-Qwen-14B \
+  --dataset_folder datasets/ \
+  --output_dir ./financial_lora \
+  --resume_from_checkpoint ./financial_lora/checkpoint-latest
+```
+
+Use `--skip_dataset_prep`, `--skip_training`, or `--skip_merge` to rerun only
+specific stages.
+
+## Using the Outputs
+
+### 1. Continue Training with LoRA
 
 ```python
-# Memory-efficient configuration for large models
-per_device_train_batch_size: 1
-gradient_accumulation_steps: 8  # Effective batch size: 8
-learning_rate: 2e-5
-max_seq_length: 4096
+from unsloth import FastLanguageModel
+from peft import PeftModel
 
-# LoRA configuration for financial tasks
-lora_r: 32  # Higher rank for complex reasoning
-lora_alpha: 64  # Balanced scaling
-target_modules: q_proj,k_proj,v_proj,o_proj,gate_proj,up_proj,down_proj
+model, tokenizer = FastLanguageModel.from_pretrained(
+    model_name="DSR1/DSR1-Distill-Qwen-14B",
+    max_seq_length=4096,
+    dtype=None,
+    load_in_4bit=True,
+)
+model = PeftModel.from_pretrained(model, "./financial_lora")
 ```
 
-### Dataset Composition
-
-1. **SFT Datasets** (Alpaca format):
-   - Trading conversations and analysis
-   - Financial Q&A pairs
-   - Investment strategy discussions
-
-2. **Investopedia Integration**:
-   - Financial education content
-   - Investment terminology
-   - Market analysis explanations
-
-## Advanced Usage
-
-### Custom Output Directory
-
-```bash
-python train_financial_model.py --output_dir ./my_finance_model
-```
-
-### Custom Training Parameters
-
-```bash
-python train_financial_model.py \
-  --extra_args \
-  --learning_rate 1e-5 \
-  --num_train_epochs 5 \
-  --lora_r 64 \
-  --max_seq_length 8192
-```
-
-### Resume Training
-
-If training is interrupted, you can resume from the latest checkpoint:
-
-```bash
-python train.py \
-  --model_name ServiceNow/Apriel-Nemotron-15B-Thinker \
-  --dataset_folder datasets/ \
-  --output_dir ./financial_model_output \
-  --resume_from_checkpoint ./financial_model_output/checkpoint-latest
-```
-
-## Expected Training Time
-
-- **Hardware**: Single GPU with 24GB+ VRAM recommended
-- **Duration**: 4-8 hours depending on dataset size and hardware
-- **Memory Usage**: ~16-20GB VRAM during training
-- **Disk Space**: ~50GB for model and datasets
-
-## Output Structure
-
-```
-financial_model_output/
-├── adapter_model.bin          # Trained LoRA adapters
-├── adapter_config.json        # LoRA configuration
-├── tokenizer.json             # Updated tokenizer
-├── training_args.bin          # Training configuration
-├── trainer_state.json         # Training progress
-└── checkpoint-*/             # Intermediate checkpoints
-```
-
-## Model Capabilities
-
-After training, the model will be specialized for:
-
-- **Trading Analysis**: Market trend analysis, entry/exit strategies
-- **Financial Education**: Investment concepts, terminology explanation
-- **Risk Assessment**: Portfolio risk evaluation, position sizing
-- **Market Research**: Company analysis, sector trends
-- **Investment Strategy**: Diversification advice, asset allocation
-
-## Integration
-
-### Load the Trained Model
+### 2. Load the Merged Hugging Face Checkpoint
 
 ```python
 from transformers import AutoModelForCausalLM, AutoTokenizer
-from peft import PeftModel
 
-# Load base model
 model = AutoModelForCausalLM.from_pretrained(
-    "ServiceNow/Apriel-Nemotron-15B-Thinker",
-    torch_dtype=torch.float16,
-    device_map="auto"
+    "./merged_financial_fp16",
+    torch_dtype="auto",
+    device_map="auto",
 )
-
-# Load fine-tuned adapters
-model = PeftModel.from_pretrained(model, "./financial_model_output")
-
-# Load tokenizer
-tokenizer = AutoTokenizer.from_pretrained("./financial_model_output")
+tokenizer = AutoTokenizer.from_pretrained("./merged_financial_fp16")
 ```
 
-### Example Usage
+### 3. Run the Quantised GGUF with llama.cpp
 
-```python
-messages = [
-    {"role": "system", "content": "You are a financial trading assistant with deep market expertise."},
-    {"role": "user", "content": "What's the best strategy for pyramiding into a winning position in tech stocks?"}
-]
-
-inputs = tokenizer.apply_chat_template(messages, return_tensors="pt")
-outputs = model.generate(inputs, max_new_tokens=512)
-response = tokenizer.decode(outputs[0])
+```bash
+./llama.cpp/build/bin/llama-cli \
+  -m financial_model_q4_k_m.gguf \
+  -p "Explain risk parity to an intermediate investor." \
+  -n 128 --temp 0.7 -ngl 99
 ```
 
 ## Troubleshooting
 
-### Memory Issues
-- Reduce `per_device_train_batch_size` to 1
-- Increase `gradient_accumulation_steps`
-- Use `max_seq_length` of 2048 instead of 4096
+- **CUDA OOM**: Reduce `--max_seq_length` or increase `--gradient_accumulation_steps`
+- **Convert script missing**: Ensure `--llama_cpp_path` points to a llama.cpp checkout with `convert_hf_to_gguf.py`
+- **llama-quantize not found**: Build llama.cpp (`cmake -B build -S . && cmake --build build`)
+- **Dataset download failures**: Re-run with a stable connection; datasets are cached under `~/.cache/huggingface`
 
-### Dataset Issues
-- Run `python convert_datasets.py` to ensure proper formatting
-- Check that datasets are in the correct folders
-- Verify JSON format is valid
+## Contribution Notes
 
-### Model Loading Issues
-- Ensure sufficient VRAM (24GB+ recommended)
-- Use quantization if needed
-- Check model name spelling
+When extending the pipeline:
 
-## Performance Optimization
+- Keep defaults aligned with the scripts in this repository
+- Document new arguments in this guide and `README.md`
+- Provide fallbacks (`--skip_*`) so stages remain resumable
 
-For production deployment:
-
-1. **Quantization**: Use GGUF format for inference
-2. **Model Merging**: Merge LoRA adapters with base model
-3. **Caching**: Enable KV-cache for faster inference
-4. **Batch Processing**: Implement batch inference for multiple queries
-
-## Contributing
-
-To add new financial datasets:
-
-1. Place datasets in `random/` folder
-2. Run `python convert_datasets.py`
-3. They will be automatically formatted and organized
-4. Re-run training to include new data
-
-## License
-
-This training setup is provided for educational and research purposes. Ensure compliance with dataset licenses and model usage terms.
+Happy quantising!

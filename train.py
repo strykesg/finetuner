@@ -12,13 +12,12 @@ from unsloth import FastLanguageModel, is_bfloat16_supported
 
 import argparse
 import os
-from typing import Any, Dict
-import torch
+from typing import Any, Dict, Optional, Sequence
+
 from datasets import load_dataset, concatenate_datasets
-from transformers import TrainingArguments
 from trl import SFTTrainer, SFTConfig
 
-def parse_arguments() -> argparse.Namespace:
+def parse_arguments(argv: Optional[Sequence[str]] = None) -> argparse.Namespace:
     """Parse command-line arguments."""
     parser = argparse.ArgumentParser(
         description="Universal Command-Line Fine-Tuning Utility for Language Models",
@@ -60,7 +59,7 @@ def parse_arguments() -> argparse.Namespace:
     parser.add_argument("--save_steps", type=int, default=500)
     parser.add_argument("--save_total_limit", type=int, default=3)
 
-    return parser.parse_args()
+    return parser.parse_args(argv)
 
 def format_alpaca_dataset(dataset: Any) -> Any:
     """Formats an Alpaca-style dataset."""
@@ -130,20 +129,20 @@ def load_and_format_dataset(args: argparse.Namespace, tokenizer: Any) -> Any:
         else:
             return format_sharegpt_dataset(ds, tokenizer)
 
-def main() -> None:
-    """Main execution function."""
-    args = parse_arguments()
+def run_training(args: argparse.Namespace) -> None:
+    """Execute training with a pre-parsed argument namespace."""
 
     # Financial model mode overrides
     if args.financial_model:
         print("Running in financial model mode...")
-        args.model_name = "unsloth/Meta-Llama-3.1-8B-bnb-4bit"
+        args.model_name = "DSR1/DSR1-Distill-Qwen-14B"
         args.dataset_folder = "datasets/"
+        args.output_dir = "./financial_lora"
         args.max_seq_length = 4096
         args.num_train_epochs = 3
         args.per_device_train_batch_size = 1
         args.gradient_accumulation_steps = 8
-        args.learning_rate = 2e-5
+        args.learning_rate = 1e-5
         args.lora_r = 32
         args.lora_alpha = 64
         args.quantization = "4bit"
@@ -226,6 +225,13 @@ def main() -> None:
     print("Fine-tuning completed successfully!")
     model.save_pretrained(args.output_dir)
     tokenizer.save_pretrained(args.output_dir)
+
+
+def main() -> None:
+    """CLI entry point."""
+    args = parse_arguments()
+    run_training(args)
+
 
 if __name__ == "__main__":
     main()

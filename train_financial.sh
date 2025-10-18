@@ -1,5 +1,6 @@
 #!/bin/bash
-# This script runs the full training process for the financial model using all available GPUs.
+# Convenience wrapper for the end-to-end financial training pipeline.
+# Additional arguments are forwarded to train_financial_model.py so you can
+# specify paths like --llama_cpp_path or override hyperparameters.
 
-# Use 'accelerate launch' for distributed training, which automatically detects and uses all available GPUs.
-accelerate launch train.py --financial_model
+python train_financial_model.py "$@"
