@@ -135,7 +135,7 @@ def run_training(args: argparse.Namespace) -> None:
     # Financial model mode overrides
     if args.financial_model:
         print("Running in financial model mode...")
-        args.model_name = "DSR1/DSR1-Distill-Qwen-14B"
+        args.model_name = "deepseek-ai/DeepSeek-Coder-V2-Lite-Instruct"
         args.dataset_folder = "datasets/"
         args.output_dir = "./financial_lora"
         args.max_seq_length = 4096

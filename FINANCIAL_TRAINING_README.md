@@ -1,7 +1,7 @@
 # Financial Model Training Guide
 
 This guide covers the end-to-end pipeline implemented in `train_financial_model.py`
-for fine-tuning **DSR1/DSR1-Distill-Qwen-14B** on curated financial datasets and
+for fine-tuning **deepseek-ai/DeepSeek-Coder-V2-Lite-Instruct** on curated financial datasets and
 exporting a production-ready `Q4_K_M` GGUF.
 
 ## Overview
@@ -35,7 +35,7 @@ checkpoint.
 
 ## Model & Training Details
 
-- **Base model**: `DSR1/DSR1-Distill-Qwen-14B`
+- **Base model**: `deepseek-ai/DeepSeek-Coder-V2-Lite-Instruct`
 - **Training precision**: 4-bit loading via Unsloth with LoRA (r=32, alpha=64)
 - **Datasets**: Trader SFT, converted Trader DPO, FinLang Investopedia (~22.5k samples)
 - **Sequence length**: 4096 tokens
@@ -66,7 +66,7 @@ python train_financial_model.py \
 
 # Resume raw training manually (advanced)
 python train.py \
-  --model_name DSR1/DSR1-Distill-Qwen-14B \
+  --model_name deepseek-ai/DeepSeek-Coder-V2-Lite-Instruct \
   --dataset_folder datasets/ \
   --output_dir ./financial_lora \
   --resume_from_checkpoint ./financial_lora/checkpoint-latest
@@ -84,7 +84,7 @@ from unsloth import FastLanguageModel
 from peft import PeftModel
 
 model, tokenizer = FastLanguageModel.from_pretrained(
-    model_name="DSR1/DSR1-Distill-Qwen-14B",
+    model_name="deepseek-ai/DeepSeek-Coder-V2-Lite-Instruct",
     max_seq_length=4096,
     dtype=None,
     load_in_4bit=True,

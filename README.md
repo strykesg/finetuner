@@ -130,7 +130,7 @@ datasets/
 
 ### Financial Model Training
 
-Train and quantize the `DSR1/DSR1-Distill-Qwen-14B` base model into a ready-to-serve
+Train and quantize the `deepseek-ai/DeepSeek-Coder-V2-Lite-Instruct` base model into a ready-to-serve
 financial assistant:
 
 ```bash
@@ -146,7 +146,7 @@ This pipeline performs the full workflow:
 
 ### Training Parameters
 
-- **Base Model**: DSR1/DSR1-Distill-Qwen-14B (4-bit training via Unsloth)
+- **Base Model**: deepseek-ai/DeepSeek-Coder-V2-Lite-Instruct (4-bit training via Unsloth)
 - **Datasets**: SFT + converted DPO + Investopedia (~22.5k examples)
 - **Batch Size**: 1 (effective 8 via gradient accumulation)
 - **Learning Rate**: 1e-5 (tuned for 14B distilled base)
@@ -169,7 +169,7 @@ python train_financial_model.py --skip_quantization
 
 # Resume raw training manually (advanced)
 python train.py \
-  --model_name DSR1/DSR1-Distill-Qwen-14B \
+  --model_name deepseek-ai/DeepSeek-Coder-V2-Lite-Instruct \
   --dataset_folder datasets/ \
   --output_dir ./financial_lora \
   --resume_from_checkpoint ./financial_lora/checkpoint-latest
@@ -265,7 +265,7 @@ from peft import PeftModel
 
 # Load base + adapters for inference
 model, tokenizer = FastLanguageModel.from_pretrained(
-    model_name="DSR1/DSR1-Distill-Qwen-14B",
+    model_name="deepseek-ai/DeepSeek-Coder-V2-Lite-Instruct",
     max_seq_length=4096,
     dtype=None,
     load_in_4bit=True,
@@ -301,7 +301,7 @@ from peft import PeftModel
 
 # Load base model
 base_model = FastLanguageModel.from_pretrained(
-    model_name="DSR1/DSR1-Distill-Qwen-14B",
+    model_name="deepseek-ai/DeepSeek-Coder-V2-Lite-Instruct",
     max_seq_length=4096,
     dtype=None,
     load_in_4bit=True,
@@ -414,7 +414,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - [Unsloth](https://github.com/unslothai/unsloth) for optimized training
 - [Hugging Face](https://huggingface.co) for datasets and transformers
 - [FinLang](https://huggingface.co/FinLang) for financial datasets
-- [DSR1](https://huggingface.co/DSR1) for the distilled Qwen base
+- [DeepSeek](https://huggingface.co/deepseek-ai) for the Coder V2 Lite Instruct base
 
 ---
 

@@ -2,7 +2,7 @@
 
 Use these steps to locate your active Vast.ai instance, connect to it, clone the
 Finetuner repository, and run the updated financial training pipeline that
-produces a Q4_K_M quantised GGUF from `DSR1/DSR1-Distill-Qwen-14B`.
+produces a Q4_K_M quantised GGUF from `deepseek-ai/DeepSeek-Coder-V2-Lite-Instruct`.
 
 ## 1. Check Vast.ai for Active Instances
 
@@ -79,7 +79,7 @@ python train_financial_model.py --llama_cpp_path /root/llama.cpp
 ```
 
 Key details:
-- Base model: `DSR1/DSR1-Distill-Qwen-14B`
+- Base model: `deepseek-ai/DeepSeek-Coder-V2-Lite-Instruct`
 - Outputs:
   - `financial_lora/` (LoRA adapters + tokenizer)
   - `merged_financial_fp16/` (merged FP16 HF checkpoint)
@@ -103,7 +103,7 @@ Key details:
 - Resume interrupted SFT training directly via `train.py`:
   ```bash
   python train.py \
-    --model_name DSR1/DSR1-Distill-Qwen-14B \
+    --model_name deepseek-ai/DeepSeek-Coder-V2-Lite-Instruct \
     --dataset_folder datasets/ \
     --output_dir ./financial_lora \
     --resume_from_checkpoint ./financial_lora/checkpoint-latest

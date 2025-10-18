@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Financial fine-tuning pipeline for DSR1-Distill-Qwen-14B.
+"""Financial fine-tuning pipeline for DeepSeek-Coder-V2-Lite-Instruct.
 
 This script orchestrates the full workflow needed to produce an instruction-tuned
-financial assistant model starting from the `DSR1/DSR1-Distill-Qwen-14B` base model.
+financial assistant model starting from the `deepseek-ai/DeepSeek-Coder-V2-Lite-Instruct` base model.
 It performs four high-level stages:
 
 1. Dataset preparation (conversion + Investopedia ingestion)
@@ -32,7 +32,7 @@ from train import parse_arguments as parse_train_arguments
 from train import run_training as run_sft_training
 
 
-DEFAULT_BASE_MODEL = "DSR1/DSR1-Distill-Qwen-14B"
+DEFAULT_BASE_MODEL = "deepseek-ai/DeepSeek-Coder-V2-Lite-Instruct"
 DEFAULT_LORA_DIR = Path("financial_lora")
 DEFAULT_MERGED_DIR = Path("merged_financial_fp16")
 DEFAULT_GGUF_FP16 = Path("financial_model_fp16.gguf")
